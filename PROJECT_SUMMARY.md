@@ -127,7 +127,7 @@
 - ✅ README.md - 项目说明
 - ✅ QUICKSTART.md - 快速开始指南
 - ✅ requirements.txt - Python依赖
-- ✅ .env.example - 环境变量示例
+- ✅ src/conf/config.yml - 配置文件
 - ✅ 技术文档
 
 ## 📁 项目结构

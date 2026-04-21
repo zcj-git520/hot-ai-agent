@@ -1,0 +1,486 @@
+openapi: 3.0.3
+info:
+  title: AI 智能体 API
+  description: 基于大模型的智能问答系统，支持翻译、分类、摘要、推荐、职业分析等功能
+  version: 1.0.0
+  contact:
+    name: AI Agent Team
+
+servers:
+  - url: http://localhost:8000
+    description: 本地开发服务器
+
+paths:
+  /:
+    get:
+      summary: 根路径
+      description: 返回服务基本信息
+      operationId: root_get
+      tags:
+        - 通用
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: AI 智能体 API 服务
+                  version:
+                    type: string
+                    example: 1.0.0
+                  docs:
+                    type: string
+                    example: /docs
+
+  /health:
+    get:
+      summary: 健康检查
+      description: 检查服务是否正常运行
+      operationId: health_check_get
+      tags:
+        - 通用
+      responses:
+        '200':
+          description: 服务健康
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: healthy
+
+  /api/translate:
+    post:
+      summary: 文本翻译
+      description: |
+        文本翻译接口，支持多模型。
+        语言方向：中文(cn)->英文(en)，非中文->中文(cn)
+      operationId: translate_text
+      tags:
+        - 翻译
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TranslateRequest'
+      responses:
+        '200':
+          description: 翻译成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TranslateResponse'
+        '500':
+          description: 翻译失败
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+
+  /api/classify:
+    post:
+      summary: 内容分类
+      description: |
+        智能分类接口，根据提供的内容和可选类别进行分类。
+        返回分类结果、置信度和分类理由。
+      operationId: classify_content
+      tags:
+        - 分类
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClassifyRequest'
+      responses:
+        '200':
+          description: 分类成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClassifyResponse'
+        '500':
+          description: 分类失败
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+
+  /api/summary:
+    post:
+      summary: 文本摘要
+      description: |
+        文本摘要接口，生成简洁准确的摘要内容。
+        支持关键词提取和多语言摘要。
+      operationId: generate_summary
+      tags:
+        - 摘要
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SummaryRequest'
+      responses:
+        '200':
+          description: 摘要生成成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SummaryResponse'
+        '500':
+          description: 摘要生成失败
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+
+  /api/recommend:
+    post:
+      summary: 学习路径推荐
+      description: |
+        基于用户职业和学习目标，推荐学习路径。
+        使用RAG模式进行智能推荐。
+      operationId: recommend_learning_path
+      tags:
+        - 推荐
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecommendationRequest'
+      responses:
+        '200':
+          description: 推荐成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecommendationResponse'
+        '500':
+          description: 推荐失败
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+
+  /api/profession/analyze:
+    post:
+      summary: 职业分析
+      description: |
+        分析特定职业受AI自动化的影响程度。
+        返回风险等级、自动化率、分析内容和建议。
+        使用Agent模式进行深度分析。
+      operationId: analyze_profession
+      tags:
+        - 职业分析
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProfessionAnalysisRequest'
+      responses:
+        '200':
+          description: 分析成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfessionAnalysisResponse'
+        '500':
+          description: 分析失败
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+
+components:
+  schemas:
+    TranslateRequest:
+      type: object
+      required:
+        - content
+      properties:
+        content:
+          type: string
+          description: 待翻译的文本
+          minLength: 1
+          example: Hello, world!
+        source_language:
+          type: string
+          description: 源语言，auto表示自动检测
+          default: auto
+          example: auto
+        target_language:
+          type: string
+          description: 目标语言，空表示自动判断（中文->en，非中文->cn）
+          default: ""
+          example: ""
+        model:
+          type: string
+          description: 模型标识符：glm, deepseek, qwen, custom
+          example: deepseek
+
+    TranslateResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        translated_text:
+          type: string
+          description: 翻译结果
+          example: 你好，世界！
+        source_text:
+          type: string
+          description: 原始文本
+          example: Hello, world!
+        source_language:
+          type: string
+          description: 源语言：cn(中文) 或 en(英文)
+          example: en
+        target_language:
+          type: string
+          description: 目标语言：cn(中文) 或 en(英文)
+          example: cn
+        model:
+          type: string
+          description: 使用的模型名称
+          example: deepseek-chat
+
+    ClassifyRequest:
+      type: object
+      required:
+        - content
+        - categories
+      properties:
+        content:
+          type: string
+          description: 待分类内容
+          example: 这是一篇关于人工智能的技术文章
+        categories:
+          type: array
+          items:
+            type: string
+          description: 可选类别列表
+          example: ["news", "tech", "business", "entertainment"]
+        max_length:
+          type: integer
+          description: 内容最大长度
+          default: 500
+          minimum: 1
+          maximum: 2000
+
+    ClassifyResponse:
+      type: object
+      properties:
+        category:
+          type: string
+          description: 分类结果
+          example: tech
+        confidence:
+          type: number
+          format: float
+          description: 置信度 (0-1)
+          example: 0.95
+        reason:
+          type: string
+          description: 分类理由
+          example: 文章主要讨论AI技术
+        model:
+          type: string
+          description: 使用的模型
+          example: deepseek-chat
+
+    SummaryRequest:
+      type: object
+      required:
+        - content
+      properties:
+        content:
+          type: string
+          description: 待摘要文本
+          example: 长文本内容...
+        max_length:
+          type: integer
+          description: 摘要最大长度
+          default: 200
+          minimum: 50
+          maximum: 1000
+        include_keywords:
+          type: boolean
+          description: 是否提取关键词
+          default: true
+        language:
+          type: string
+          description: 摘要语言
+          default: 中文
+
+    SummaryResponse:
+      type: object
+      properties:
+        summary:
+          type: string
+          description: 生成的摘要
+          example: 这是文本的摘要内容...
+        keywords:
+          type: array
+          items:
+            type: string
+          description: 关键词列表
+          example: ["AI", "技术", "发展"]
+        length:
+          type: integer
+          description: 摘要长度
+          example: 150
+        model:
+          type: string
+          description: 使用的模型
+          example: deepseek-chat
+        request_id:
+          type: string
+          description: 请求ID
+          example: req_123456
+
+    RecommendationRequest:
+      type: object
+      required:
+        - user_profession
+      properties:
+        user_profession:
+          type: string
+          description: 用户职业
+          example: 软件工程师
+        learning_goals:
+          type: array
+          items:
+            type: string
+          description: 学习目标列表
+          example: ["提升AI能力", "掌握机器学习"]
+        target_days:
+          type: integer
+          description: 目标天数
+          example: 60
+
+    RecommendationResponse:
+      type: object
+      properties:
+        learning_paths:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+                example: 入门级AI应用
+              duration_days:
+                type: integer
+                example: 30
+              stages:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                    content:
+                      type: string
+                    duration_days:
+                      type: integer
+              reason:
+                type: string
+                example: 适合初学者快速入门
+        model:
+          type: string
+          example: deepseek-chat
+        request_id:
+          type: string
+          example: req_123456
+
+    ProfessionAnalysisRequest:
+      type: object
+      required:
+        - profession
+      properties:
+        profession:
+          type: string
+          description: 职业名称
+          example: 会计
+        user_profile:
+          type: object
+          description: 用户画像
+          example:
+            experience: 5年
+            skills:
+              - 财务分析
+        include_recommendations:
+          type: boolean
+          description: 是否包含建议
+          default: true
+
+    ProfessionAnalysisResponse:
+      type: object
+      properties:
+        risk_level:
+          type: string
+          description: 风险等级（高/中/低）
+          example: 中
+        automation_rate:
+          type: number
+          format: float
+          description: 自动化率 (0-100)
+          example: 45.5
+        analysis:
+          type: string
+          description: 分析内容
+          example: 该职业部分工作可被自动化替代
+        recommendations:
+          type: array
+          items:
+            type: string
+          description: 建议列表
+          example:
+            - 学习数据分析技能
+            - 掌握AI辅助工具
+        model:
+          type: string
+          example: deepseek-chat
+        request_id:
+          type: string
+          example: req_123456
+
+tags:
+  - name: 通用
+    description: 通用接口
+  - name: 翻译
+    description: 翻译相关接口
+  - name: 分类
+    description: 内容分类接口
+  - name: 摘要
+    description: 文本摘要接口
+  - name: 推荐
+    description: 学习路径推荐接口
+  - name: 职业分析
+    description: 职业分析相关接口

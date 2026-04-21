@@ -25,8 +25,7 @@ git clone https://github.com/your-org/hot-ai-agent.git
 cd hot-ai-agent
 
 # 2. 配置环境变量
-cp .env.example .env
-# 编辑.env文件，设置OPENAI_API_KEY
+# 编辑 src/conf/config.yml 文件，设置相关配置
 
 # 3. 安装依赖
 pip install -r ai_agent_service/requirements.txt
@@ -40,8 +39,7 @@ python main.py
 
 ```bash
 # 1. 配置环境变量
-cp .env.example .env
-# 编辑.env文件，设置OPENAI_API_KEY
+# 编辑 src/conf/config.yml 文件，设置相关配置
 
 # 2. 启动服务
 docker-compose up -d
@@ -54,30 +52,41 @@ docker-compose logs -f ai-agent-service
 
 ### 主要配置项
 
-```bash
-# AI模型配置
-AI_PROVIDER=openai           # AI提供商 (openai/anthropic)
-AI_MODEL=gpt-4               # 使用的模型
-AI_MAX_TOKENS=2000           # 最大token数
-AI_TEMPERATURE=0.7           # 温度参数（0-1）
+项目使用 `src/conf/config.yml` 作为配置文件，主要配置包括：
 
-# 服务端口
-PORT=8889                    # 服务监听端口
-DEBUG=True                   # 调试模式
+```yaml
+# LLM 配置
+llm:
+  openai_api_key: "your_openai_api_key"    # OpenAI API密钥
+  qwen_api_key: "your_qwen_api_key"        # 通义千问API密钥
+  deepseek_api_key: "your_deepseek_api_key" # DeepSeek API密钥
 
-# 缓存配置
-CACHE_TTL=3600               # 缓存过期时间（秒）
+# Redis 配置
+redis:
+  host: "localhost"      # Redis地址
+  port: 6379             # Redis端口
+  cache_ttl: 3600        # 缓存过期时间（秒）
+
+# 应用配置
+app:
+  host: "0.0.0.0"  # 服务监听地址
+  port: 8000       # 服务端口
+  debug: true      # 调试模式
 ```
 
-### 环境变量清单
+### 环境变量（可选）
+
+在 Docker 部署时，可以通过环境变量覆盖配置：
 
 | 变量名 | 必填 | 默认值 | 说明 |
 |--------|------|--------|------|
 | OPENAI_API_KEY | ✅ | - | OpenAI API密钥 |
+| QWEN_API_KEY | ❌ | - | 通义千问API密钥 |
+| DEEPSEEK_API_KEY | ❌ | - | DeepSeek API密钥 |
 | REDIS_HOST | ❌ | localhost | Redis地址 |
 | REDIS_PORT | ❌ | 6379 | Redis端口 |
-| CACHE_TTL | ❌ | 3600 | 缓存TTL（秒） |
-| PORT | ❌ | 8889 | 服务端口 |
+| APP_PORT | ❌ | 8000 | 服务端口 |
+| DEBUG | ❌ | false | 调试模式 |
 
 ## 🎯 运行服务
 
@@ -88,8 +97,7 @@ CACHE_TTL=3600               # 缓存过期时间（秒）
 bash start.sh
 
 # 或直接运行
-cd ai_agent_service
-python main.py
+python src/main.py
 ```
 
 ### 生产环境
@@ -204,37 +212,37 @@ curl -X POST http://localhost:8889/api/ai/learning-path/recommend \
 
 **解决方案**：
 - 启动Redis服务：`docker-compose up -d redis`
-- 或修改.env中的REDIS_HOST为实际Redis地址
+- 或修改 `src/conf/config.yml` 中的 `redis.host` 为实际Redis地址
 
-### 2. OpenAI API调用失败
+### 2. LLM API调用失败
 
 **解决方案**：
-- 检查.env中的OPENAI_API_KEY是否正确
-- 确保网络可以访问OpenAI API
-- 检查API Key是否有足够额度
+- 检查 `src/conf/config.yml` 中的 API Key 是否正确
+- 确保网络可以访问对应的 LLM API
+- 检查 API Key 是否有足够额度
 
 ### 3. 端口被占用
 
 **解决方案**：
-- 修改.env中的PORT为其他端口
-- 或停止占用8889端口的进程
+- 修改 `src/conf/config.yml` 中的 `app.port` 为其他端口
+- 或停止占用8000端口的进程
 
 ### 4. 依赖安装失败
 
 **解决方案**：
 ```bash
 # 使用国内镜像源
-pip install -r ai_agent_service/requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
+pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
 ```
 
 ### 5. 查看详细日志
 
 ```bash
 # 实时查看日志
-tail -f ai_agent_service/logs/ai_agent_service.log
+tail -f logs/src.main.log
 
 # 查看错误日志
-tail -f ai_agent_service/logs/ai_agent_error.log
+tail -f logs/*.log
 ```
 
 ## 🛠️ 常用命令

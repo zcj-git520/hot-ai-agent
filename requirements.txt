@@ -1,0 +1,34 @@
+# FastAPI 框架
+fastapi>=0.109.0
+uvicorn>=0.27.0
+pydantic>=2.5.0
+python-dotenv>=1.0.0
+
+# LangChain 核心
+langchain>=0.3.0
+langgraph>=0.2.0
+
+# LangChain 集成包
+langchain-openai>=0.2.0
+langchain-chroma>=0.1.0
+langchain-text-splitters>=0.1.0
+
+# LLM SDK
+openai>=1.10.0
+
+# 向量数据库
+chromadb>=0.4.22
+
+# Redis 缓存
+redis>=5.0.0
+
+# 配置管理
+pyyaml>=6.0.1
+
+# 日志
+loguru>=0.7.2
+
+# 工具库
+httpx>=0.26.0
+requests>=2.31.0
+tiktoken>=0.5.2

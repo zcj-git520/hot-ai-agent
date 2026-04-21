@@ -1,0 +1,74 @@
+llm:
+  # 默认模型
+  default: "glm"
+
+  # 多模型配置
+  models:
+    glm:
+      modelName: 'GLM-4-Flash-250414'
+      apiKey: "9d800547f8ad44a69333a5101fdd8357.YHgHndotPCQQ0o6a"
+      apiBase: "https://open.bigmodel.cn/api/paas/v4"
+      maxTokens: 1024
+      temperature: 0.7
+      timeout: 120
+      type: "openai"
+
+    deepseek:
+      modelName: 'deepseek-chat'
+      apiKey: "your-deepseek-api-key"
+      apiBase: "https://api.deepseek.com/v1"
+      maxTokens: 1024
+      temperature: 0.7
+      timeout: 120
+      type: "openai"
+
+    qwen:
+      modelName: 'qwen-plus'
+      apiKey: "your-qwen-api-key"
+      apiBase: "https://dashscope.aliyuncs.com/compatible-mode/v1"
+      maxTokens: 1024
+      temperature: 0.7
+      timeout: 120
+      type: "openai"
+
+    custom:
+      modelName: 'qwen-plus'
+      apiKey: "your-qwen-api-key"
+      apiBase: "https://dashscope.aliyuncs.com/compatible-mode/v1"
+      maxTokens: 1024
+      temperature: 0.7
+      timeout: 120
+      type: "openai"
+
+#  # 兼容旧配置（单个模型）- 已废弃，请使用上面的 models 节点
+#  modelName: 'GLM-4-Flash-250414'
+#  apiKey: "9d800547f8ad44a69333a5101fdd8357.YHgHndotPCQQ0o6a"
+#  apiBase: "https://open.bigmodel.cn/api/paas/v4"
+#  maxTokens: 1024
+#  embeddingModelName: 'text-embedding-v4'
+
+chroma:
+  host: "192.168.50.109"
+  port: 7000
+  collection_name: "doc_code_db"
+
+# Redis 配置
+redis:
+  host: "192.168.41.63"
+  port: 16379
+  password: "Shds@402"
+  db: 0
+  cache_prefix: "ai_agent:"
+  cache_ttl: 3600
+
+# 应用配置
+app:
+  host: "0.0.0.0"
+  port: 8005
+  debug: true
+
+# RAG 配置
+rag:
+  chroma_persist_dir: "./chroma_db"
+  chroma_collection: "documents"
+  embedding_model: "text-embedding-3-small"
