@@ -1,6 +1,7 @@
 """
 Redis缓存管理器
 实现AI处理结果的缓存功能
+支持Redis不可用时优雅降级
 """
 import hashlib
 import json
@@ -17,16 +18,29 @@ class RedisCache:
 
     def __init__(self):
         """初始化Redis缓存"""
-        self.redis_client = Redis(
-            host=settings.redis_host,
-            port=settings.redis_port,
-            db=settings.redis_db,
-            password=settings.redis_password,
-            decode_responses=False
-        )
+        self.enabled = getattr(settings, 'redis_enabled', True)
         self.prefix = settings.cache_prefix
         self.ttl = settings.cache_ttl
-        self._test_connection()
+
+        if not self.enabled:
+            logger.info("Redis缓存已禁用")
+            self.redis_client = None
+            return
+
+        try:
+            self.redis_client = Redis(
+                host=settings.redis_host,
+                port=settings.redis_port,
+                db=settings.redis_db,
+                password=settings.redis_password if settings.redis_password else None,
+                decode_responses=False,
+                socket_connect_timeout=3,
+                socket_timeout=3
+            )
+            self._test_connection()
+        except Exception as e:
+            logger.warning(f"Redis初始化失败: {str(e)}，缓存功能已禁用")
+            self.redis_client = None
 
     def _test_connection(self):
         """测试Redis连接"""
@@ -34,7 +48,8 @@ class RedisCache:
             self.redis_client.ping()
             logger.info("Redis连接成功")
         except Exception as e:
-            logger.warning(f"Redis连接失败: {str(e)}")
+            logger.warning(f"Redis连接失败: {str(e)}，缓存功能已禁用")
+            self.redis_client = None
 
     def _generate_key(self, content: str, suffix: str = "") -> str:
         """
@@ -67,6 +82,9 @@ class RedisCache:
         Returns:
             Optional[str]: 缓存的值，如果不存在则返回None
         """
+        if self.redis_client is None:
+            return None
+
         key = self._generate_key(content, suffix)
 
         try:
@@ -98,6 +116,9 @@ class RedisCache:
         Returns:
             bool: 是否设置成功
         """
+        if self.redis_client is None:
+            return False
+
         key = self._generate_key(content, suffix)
         expire_time = ttl or self.ttl
 
@@ -120,6 +141,9 @@ class RedisCache:
         Returns:
             bool: 是否删除成功
         """
+        if self.redis_client is None:
+            return False
+
         key = self._generate_key(content, suffix)
 
         try:
@@ -141,6 +165,9 @@ class RedisCache:
         Returns:
             bool: 是否存在
         """
+        if self.redis_client is None:
+            return False
+
         key = self._generate_key(content, suffix)
 
         try:
@@ -159,6 +186,9 @@ class RedisCache:
         Returns:
             int: 增加后的值
         """
+        if self.redis_client is None:
+            return 0
+
         try:
             return self.redis_client.incr(key)
         except Exception as e:
@@ -172,6 +202,9 @@ class RedisCache:
         Returns:
             Dict[str, Any]: 统计信息
         """
+        if self.redis_client is None:
+            return {"enabled": False, "total_keys": 0}
+
         try:
             # 获取所有缓存键
             keys = []
@@ -179,13 +212,14 @@ class RedisCache:
                 keys.append(key.decode('utf-8'))
 
             return {
+                "enabled": True,
                 "total_keys": len(keys),
                 "prefix": self.prefix,
                 "ttl": self.ttl
             }
         except Exception as e:
             logger.error(f"获取缓存统计失败: {str(e)}")
-            return {}
+            return {"enabled": True, "error": str(e)}
 
     def clear_pattern(self, pattern: str) -> int:
         """
@@ -197,6 +231,9 @@ class RedisCache:
         Returns:
             int: 删除的键数量
         """
+        if self.redis_client is None:
+            return 0
+
         try:
             deleted = 0
             for key in self.redis_client.scan_iter(match=pattern):
@@ -216,8 +253,11 @@ class RedisCache:
         Returns:
             bool: 是否清除成功
         """
+        if self.redis_client is None:
+            return False
+
         try:
-            return self.clear_pattern(f"{self.prefix}*")
+            return self.clear_pattern(f"{self.prefix}*") >= 0
         except Exception as e:
             logger.error(f"清除所有缓存失败: {str(e)}")
             return False

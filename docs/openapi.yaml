@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: AI 智能体 API
-  description: 基于大模型的智能问答系统，支持翻译、分类、摘要、推荐、职业分析等功能
+  description: 基于大模型的智能问答系统，支持翻译、AI文章分析、摘要、推荐、职业分析等功能
   version: 1.0.0
   contact:
     name: AI Agent Team
@@ -87,30 +87,33 @@ paths:
                   detail:
                     type: string
 
-  /api/classify:
+  /api/ai-article:
     post:
-      summary: 内容分类
+      summary: AI文章分析
       description: |
-        智能分类接口，根据提供的内容和可选类别进行分类。
-        返回分类结果、置信度和分类理由。
-      operationId: classify_content
+        AI文章分类与审核接口。
+        - 判断是否为AI相关内容
+        - 分类：动态/学习/工具/职业
+        - 提取核心要点、摘要和关键词
+        - 返回分类置信度和理由
+      operationId: analyze_ai_article
       tags:
-        - 分类
+        - 文章分析
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ClassifyRequest'
+              $ref: '#/components/schemas/AIArticleRequest'
       responses:
         '200':
-          description: 分类成功
+          description: 分析成功
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ClassifyResponse'
+                $ref: '#/components/schemas/AIArticleResponse'
         '500':
-          description: 分类失败
+          description: 分析失败
           content:
             application/json:
               schema:
@@ -270,49 +273,67 @@ components:
           description: 使用的模型名称
           example: deepseek-chat
 
-    ClassifyRequest:
+    AIArticleRequest:
       type: object
       required:
+        - title
         - content
-        - categories
       properties:
+        title:
+          type: string
+          description: 文章标题
+          minLength: 1
+          example: OpenAI发布GPT-5新一代大语言模型
         content:
           type: string
-          description: 待分类内容
-          example: 这是一篇关于人工智能的技术文章
-        categories:
-          type: array
-          items:
-            type: string
-          description: 可选类别列表
-          example: ["news", "tech", "business", "entertainment"]
-        max_length:
-          type: integer
-          description: 内容最大长度
-          default: 500
-          minimum: 1
-          maximum: 2000
+          description: 文章内容
+          minLength: 10
+          example: OpenAI在今日正式发布了GPT-5...
+        model:
+          type: string
+          description: 模型标识符：glm, deepseek, qwen, custom
+          example: glm
 
-    ClassifyResponse:
+    AIArticleResponse:
       type: object
       properties:
         category:
           type: string
-          description: 分类结果
-          example: tech
+          description: 分类结果：动态/学习/工具/职业
+          example: 动态
         confidence:
           type: number
           format: float
           description: 置信度 (0-1)
-          example: 0.95
+          example: 0.85
         reason:
           type: string
           description: 分类理由
-          example: 文章主要讨论AI技术
+          example: 文章报道了AI行业最新动态
+        is_ai_related:
+          type: boolean
+          description: 是否AI相关内容
+          example: true
+        key_points:
+          type: array
+          items:
+            type: string
+          description: 核心要点列表
+          example: ["GPT-5发布", "新架构设计", "下月测试"]
+        summary:
+          type: string
+          description: 文章摘要
+          example: OpenAI发布GPT-5新一代大模型
+        keywords:
+          type: array
+          items:
+            type: string
+          description: 关键词列表
+          example: ["OpenAI", "GPT-5", "大语言模型"]
         model:
           type: string
           description: 使用的模型
-          example: deepseek-chat
+          example: glm
 
     SummaryRequest:
       type: object
@@ -476,8 +497,8 @@ tags:
     description: 通用接口
   - name: 翻译
     description: 翻译相关接口
-  - name: 分类
-    description: 内容分类接口
+  - name: 文章分析
+    description: AI文章分析接口（分类、审核、信息提取）
   - name: 摘要
     description: 文本摘要接口
   - name: 推荐

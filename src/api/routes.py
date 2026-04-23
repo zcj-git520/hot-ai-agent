@@ -7,7 +7,7 @@ from pydantic import BaseModel, Field
 from typing import List, Optional
 
 from src.chains.translate_chain import TranslateChain, TranslateRequest
-from src.chains.review_chain import ReviewChain, ReviewRequest
+from src.chains.ai_article_chain import AIArticleChain, AIArticleRequest
 from src.utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -49,25 +49,23 @@ class TranslateRequestModel(BaseModel):
     model: Optional[str] = Field(None, description="模型标识符: glm, deepseek, qwen, custom")
 
 
-class ReviewRequestModel(BaseModel):
-    """文章审核请求模型"""
+class AIArticleRequestModel(BaseModel):
+    """AI文章分析请求模型"""
     title: str = Field(..., description="文章标题", min_length=1)
     content: str = Field(..., description="文章内容", min_length=10)
     model: Optional[str] = Field(None, description="模型标识符: glm, deepseek, qwen, custom")
 
 
-class ReviewResponseModel(BaseModel):
-    """文章审核响应模型"""
-    is_ai_related: bool
-    ai_directness: str
-    ai_relevance_score: float
-    depth_level: str
-    depth_score: float
-    key_points: List[str]
-    summary: str
-    keywords: List[str]
-    reason: str
-    model: str
+class AIArticleResponseModel(BaseModel):
+    """AI文章分析响应模型"""
+    category: str                       # 分类：动态/学习/工具/职业
+    confidence: float                   # 置信度 0-1
+    reason: str                         # 分类理由
+    is_ai_related: bool                 # 是否AI相关内容
+    key_points: List[str]              # 核心要点
+    summary: str                        # 摘要
+    keywords: List[str]                 # 关键词
+    model: str                          # 使用的模型
 
 
 @router.post("/translate")
@@ -129,58 +127,56 @@ async def translate_text(request: TranslateRequestModel):
         raise HTTPException(status_code=500, detail=f"翻译失败：{str(e)}")
 
 
-@router.post("/review", response_model=ReviewResponseModel)
-async def review_article(request: ReviewRequestModel):
+@router.post("/ai-article", response_model=AIArticleResponseModel)
+async def analyze_ai_article(request: AIArticleRequestModel):
     """
-    文章审核接口
+    AI文章分析接口
 
-    对文章进行AI相关性判断和深度评估：
-    - AI相关性：判断文章是否与AI相关（direct/indirect/unrelated）
-    - 内容深度：评估文章深度（surface/technical/research）
+    对文章进行AI相关性判断和分类：
+    - 判断是否为AI相关内容
+    - 分类：动态/学习/工具/职业
     - 提取核心要点、摘要和关键词
     """
     start_time = time.time()
     content_length = len(request.content)
 
-    logger.info(f"收到文章审核请求 | 标题: {request.title[:50]}... | 长度: {content_length}字符 | 模型: {request.model or 'default'}")
+    logger.info(f"收到AI文章分析请求 | 标题: {request.title[:50]}... | 长度: {content_length}字符 | 模型: {request.model or 'default'}")
 
     try:
-        review_chain = ReviewChain(model_id=request.model)
+        ai_article_chain = AIArticleChain(model_id=request.model)
 
-        review_request = ReviewRequest(
+        ai_request = AIArticleRequest(
             title=request.title,
             content=request.content
         )
 
-        logger.info("开始执行文章审核...")
-        result = review_chain.review(review_request)
+        logger.info("开始执行AI文章分析...")
+        result = ai_article_chain.analyze(ai_request)
 
         elapsed_time = time.time() - start_time
 
         logger.info(
-            f"审核完成 | "
+            f"分析完成 | "
             f"耗时: {elapsed_time:.2f}秒 | "
-            f"AI相关: {result.is_ai_related}({result.ai_directness}) | "
-            f"深度: {result.depth_level}({result.depth_score}) | "
+            f"AI相关: {result.is_ai_related} | "
+            f"分类: {result.category}({result.confidence}) | "
             f"模型: {result.model}"
         )
 
-        return ReviewResponseModel(
+        return AIArticleResponseModel(
+            category=result.category,
+            confidence=result.confidence,
+            reason=result.reason,
             is_ai_related=result.is_ai_related,
-            ai_directness=result.ai_directness,
-            ai_relevance_score=result.ai_relevance_score,
-            depth_level=result.depth_level,
-            depth_score=result.depth_score,
             key_points=result.key_points,
             summary=result.summary,
             keywords=result.keywords,
-            reason=result.reason,
             model=result.model
         )
 
     except Exception as e:
         elapsed_time = time.time() - start_time
-        logger.error(f"文章审核失败 | 耗时: {elapsed_time:.2f}秒 | 错误: {str(e)}")
+        logger.error(f"AI文章分析失败 | 耗时: {elapsed_time:.2f}秒 | 错误: {str(e)}")
         import traceback
         logger.debug(traceback.format_exc())
-        raise HTTPException(status_code=500, detail=f"文章审核失败：{str(e)}")
+        raise HTTPException(status_code=500, detail=f"AI文章分析失败：{str(e)}")

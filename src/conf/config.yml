@@ -54,6 +54,7 @@ chroma:
 
 # Redis 配置
 redis:
+  enabled: true
   host: "192.168.41.63"
   port: 16379
   password: "Shds@402"

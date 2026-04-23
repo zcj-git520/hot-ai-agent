@@ -39,6 +39,7 @@ class Settings:
 
         # Redis 配置
         redis_config = self.config.get('redis', {})
+        self.redis_enabled = redis_config.get('enabled', True)
         self.redis_host = os.getenv("REDIS_HOST") or redis_config.get('host', 'localhost')
         self.redis_port = int(os.getenv("REDIS_PORT") or str(redis_config.get('port', 6379)))
         self.redis_password = os.getenv("REDIS_PASSWORD") or redis_config.get('password', '')

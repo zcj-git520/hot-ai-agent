@@ -8,11 +8,13 @@ from .classify_chain import ClassifyChain
 from .analysis_chain import ProfessionAnalysisChain
 from .recommend_chain import RecommendChain
 from .translate_chain import TranslateChain
+from .ai_article_chain import AIArticleChain
 
 __all__ = [
     "SummaryChain",
     "ClassifyChain",
     "ProfessionAnalysisChain",
     "RecommendChain",
-    "TranslateChain"
+    "TranslateChain",
+    "AIArticleChain"
 ]
