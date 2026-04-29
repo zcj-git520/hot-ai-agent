@@ -17,7 +17,7 @@ if errorlevel 1 (
 echo.
 
 echo [2/4] 安装依赖...
-pip install -r requirements.txt --timeout 120
+pip install -r requirements.txt --timeout 180
 if errorlevel 1 (
     echo [警告] 依赖安装可能失败，尝试继续启动...
 )
