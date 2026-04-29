@@ -11,6 +11,7 @@ from src.config.settings import settings
 from src.agent.prompts import SYSTEM_PROMPT, AGENT_PROMPT
 from src.tools.calculator import calculator_tool
 from src.tools.web_search import search_tool
+from src.tools.wechat_fetcher import wechat_fetcher_tool
 
 
 def create_agent():
@@ -31,7 +32,8 @@ def create_agent():
     # 初始化工具
     tools = [
         calculator_tool,
-        search_tool
+        search_tool,
+        wechat_fetcher_tool
     ]
 
     # 构建系统提示

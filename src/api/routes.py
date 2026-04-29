@@ -8,6 +8,7 @@ from typing import List, Optional
 
 from src.chains.translate_chain import TranslateChain, TranslateRequest
 from src.chains.ai_article_chain import AIArticleChain, AIArticleRequest
+from src.tools.wechat_fetcher import fetch_wechat_article
 from src.utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -66,6 +67,24 @@ class AIArticleResponseModel(BaseModel):
     summary: str                        # 摘要
     keywords: List[str]                 # 关键词
     model: str                          # 使用的模型
+
+
+class WechatArticleRequestModel(BaseModel):
+    """微信公众号文章获取请求模型"""
+    url: str = Field(..., description="微信公众号文章链接", min_length=1)
+
+
+class WechatArticleResponseModel(BaseModel):
+    """微信公众号文章获取响应模型"""
+    success: bool
+    title: str
+    author: str
+    content: str
+    summary: str
+    publish_time: str
+    source_url: str
+    cover_image: Optional[str] = None
+    error: str = ""
 
 
 @router.post("/translate")
@@ -180,3 +199,43 @@ async def analyze_ai_article(request: AIArticleRequestModel):
         import traceback
         logger.debug(traceback.format_exc())
         raise HTTPException(status_code=500, detail=f"AI文章分析失败：{str(e)}")
+
+
+@router.post("/wechat-article", response_model=WechatArticleResponseModel)
+async def get_wechat_article(request: WechatArticleRequestModel):
+    """
+    获取微信公众号文章内容
+
+    通过提供微信文章链接，直接获取文章的标题、作者、正文内容等信息。
+    """
+    start_time = time.time()
+    logger.info(f"收到微信文章获取请求 | URL: {request.url[:80]}...")
+
+    try:
+        result = fetch_wechat_article(request.url)
+        elapsed_time = time.time() - start_time
+
+        logger.info(
+            f"微信文章获取{'成功' if result['success'] else '失败'} | "
+            f"耗时: {elapsed_time:.2f}秒 | "
+            f"标题: {result.get('title', '')[:30]}..."
+        )
+
+        return WechatArticleResponseModel(
+            success=result["success"],
+            title=result.get("title", ""),
+            author=result.get("author", ""),
+            content=result.get("content", ""),
+            summary=result.get("summary", ""),
+            publish_time=result.get("publish_time", ""),
+            source_url=result.get("source_url", ""),
+            cover_image=result.get("cover_image"),
+            error=result.get("error", "")
+        )
+
+    except Exception as e:
+        elapsed_time = time.time() - start_time
+        logger.error(f"微信文章获取失败 | 耗时: {elapsed_time:.2f}秒 | 错误: {str(e)}")
+        import traceback
+        logger.debug(traceback.format_exc())
+        raise HTTPException(status_code=500, detail=f"获取微信文章失败：{str(e)}")
