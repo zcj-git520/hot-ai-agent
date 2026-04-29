@@ -122,6 +122,38 @@ paths:
                   detail:
                     type: string
 
+  /api/wechat-article:
+    post:
+      summary: 获取微信公众号文章
+      description: |
+        通过提供微信公众号文章链接，直接获取文章的标题、作者、正文内容、摘要、发布时间等信息。
+        支持微信反爬机制处理。
+      operationId: get_wechat_article
+      tags:
+        - 公众号文章
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WechatArticleRequest'
+      responses:
+        '200':
+          description: 获取成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WechatArticleResponse'
+        '500':
+          description: 获取失败
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+
   /api/summary:
     post:
       summary: 文本摘要
@@ -335,6 +367,57 @@ components:
           description: 使用的模型
           example: glm
 
+    WechatArticleRequest:
+      type: object
+      required:
+        - url
+      properties:
+        url:
+          type: string
+          description: 微信公众号文章链接
+          minLength: 1
+          example: https://mp.weixin.qq.com/s?__biz=MjM5NTg0NDE1Mw==&mid=2652627839&idx=2&sn=b542d97a02ae6adf771b23a4ba199258
+
+    WechatArticleResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          description: 是否成功获取
+          example: true
+        title:
+          type: string
+          description: 文章标题
+          example: 深入理解AI Agent技术
+        author:
+          type: string
+          description: 文章作者
+          example: 科技前沿
+        content:
+          type: string
+          description: 文章正文内容
+          example: 本文深入探讨了AI Agent的核心概念...
+        summary:
+          type: string
+          description: 内容摘要
+          example: 本文深入探讨了AI Agent的核心概念...
+        publish_time:
+          type: string
+          description: 发布时间
+          example: 2026-04-20
+        source_url:
+          type: string
+          description: 原始链接
+          example: https://mp.weixin.qq.com/s/xxx
+        cover_image:
+          type: string
+          description: 封面图片URL
+          example: https://mmbiz.qpic.cn/xxx
+        error:
+          type: string
+          description: 错误信息（如果失败）
+          example: ""
+
     SummaryRequest:
       type: object
       required:
@@ -499,6 +582,8 @@ tags:
     description: 翻译相关接口
   - name: 文章分析
     description: AI文章分析接口（分类、审核、信息提取）
+  - name: 公众号文章
+    description: 微信公众号文章获取接口
   - name: 摘要
     description: 文本摘要接口
   - name: 推荐
