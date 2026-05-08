@@ -45,8 +45,6 @@ class IngestResponse(BaseModel):
 class TranslateRequestModel(BaseModel):
     """翻译请求模型"""
     content: str = Field(..., description="待翻译的文本", min_length=1)
-    source_language: str = Field(default="auto", description="源语言，auto表示自动检测")
-    target_language: str = Field(default="", description="目标语言，空表示自动判断：中文->英文，非中文->中文")
     model: Optional[str] = Field(None, description="模型标识符: glm, deepseek, qwen, custom")
 
 
@@ -92,52 +90,41 @@ async def translate_text(request: TranslateRequestModel):
     """
     文本翻译接口
 
-    语言方向：中文->英文，非中文->中文
+    语言方向：中文->直接返回原文，非中文->翻译为中文
     支持大文章自动分块翻译
     """
     start_time = time.time()
     content_length = len(request.content)
     is_large_text = content_length > 5000
-    
+
     # 记录请求日志
     logger.info(f"收到翻译请求 | 长度: {content_length}字符 | 类型: {'长文章' if is_large_text else '短文本'} | 模型: {request.model or 'default'}")
     logger.debug(f"请求内容预览: {request.content[:100]}...")
-    
+
     try:
         translate_chain = TranslateChain(model_id=request.model)
 
-        translate_request = TranslateRequest(
-            content=request.content,
-            source_language=request.source_language,
-            target_language=request.target_language
-        )
-        
+        translate_request = TranslateRequest(content=request.content)
+
         logger.info("开始执行翻译...")
         result = translate_chain.translate(translate_request)
-        
+
         elapsed_time = time.time() - start_time
-        
+
         # 记录响应日志
         logger.info(
             f"翻译完成 | "
             f"耗时: {elapsed_time:.2f}秒 | "
             f"原文长度: {content_length} | "
-            f"译文长度: {len(result.translated_text)} | "
-            f"语言方向: {result.source_language}->{result.target_language} | "
+            f"结果长度: {len(result.translated_text)} | "
             f"模型: {result.model}"
         )
-        
+
         return {
             "success": True,
-            "translated_text": result.translated_text,
-            "source_language": result.source_language,
-            "target_language": result.target_language,
-            "model": result.model,
-            "content_length": content_length,
-            "is_large_text": is_large_text,
-            "processing_time": round(elapsed_time, 2)
+            "translated_text": result.translated_text
         }
-        
+
     except Exception as e:
         elapsed_time = time.time() - start_time
         logger.error(f"翻译失败 | 耗时: {elapsed_time:.2f}秒 | 错误: {str(e)}")

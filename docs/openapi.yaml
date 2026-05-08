@@ -59,8 +59,8 @@ paths:
     post:
       summary: 文本翻译
       description: |
-        文本翻译接口，支持多模型。
-        语言方向：中文(cn)->英文(en)，非中文->中文(cn)
+        文本翻译接口。
+        语言方向：中文->直接返回原文，非中文->翻译为中文
       operationId: translate_text
       tags:
         - 翻译
@@ -263,16 +263,6 @@ components:
           description: 待翻译的文本
           minLength: 1
           example: Hello, world!
-        source_language:
-          type: string
-          description: 源语言，auto表示自动检测
-          default: auto
-          example: auto
-        target_language:
-          type: string
-          description: 目标语言，空表示自动判断（中文->en，非中文->cn）
-          default: ""
-          example: ""
         model:
           type: string
           description: 模型标识符：glm, deepseek, qwen, custom
@@ -286,24 +276,7 @@ components:
           example: true
         translated_text:
           type: string
-          description: 翻译结果
-          example: 你好，世界！
-        source_text:
-          type: string
-          description: 原始文本
-          example: Hello, world!
-        source_language:
-          type: string
-          description: 源语言：cn(中文) 或 en(英文)
-          example: en
-        target_language:
-          type: string
-          description: 目标语言：cn(中文) 或 en(英文)
-          example: cn
-        model:
-          type: string
-          description: 使用的模型名称
-          example: deepseek-chat
+          description: 翻译结果（中文原文或翻译后的中文）
 
     AIArticleRequest:
       type: object

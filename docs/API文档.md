@@ -79,15 +79,13 @@ AI Agent 智能体 API 是一个基于 FastAPI 构建的异步服务，提供智
 
 **POST** `/api/translate`
 
-将文本翻译为目标语言。语言方向：中文(cn)->英文(en)，非中文->中文(cn)
+将文本翻译为中文。语言方向：中文->直接返回原文，非中文->翻译为中文
 
 **请求体：**
 
 | 字段 | 类型 | 必填 | 默认值 | 描述 |
 |------|------|------|--------|------|
 | content | string | 是 | - | 待翻译的文本 |
-| source_language | string | 否 | auto | 源语言，auto表示自动检测 |
-| target_language | string | 否 | "" | 目标语言，空表示自动判断 |
 | model | string | 否 | 默认模型 | 模型标识符：glm, deepseek, qwen, custom |
 
 **请求示例：**
@@ -103,18 +101,13 @@ AI Agent 智能体 API 是一个基于 FastAPI 构建的异步服务，提供智
 ```json
 {
   "success": true,
-  "translated_text": "你好，世界！",
-  "source_language": "en",
-  "target_language": "cn",
-  "model": "GLM-4-Flash-250414"
+  "translated_text": "你好，世界！"
 }
 ```
 
 **说明：**
-- source_language/target_language 使用 `en`(英文) 或 `cn`(中文)
-- 中文文本 -> 翻译为英文
-- 英文或其他文本 -> 翻译为中文
-- model 参数指定使用的模型，默认为 config.yml 中的 default 模型
+- 原文为中文时，直接返回原文（不翻译）
+- 非中文内容翻译为中文
 
 ---
 
@@ -268,11 +261,7 @@ chain = TranslateChain()
 # 使用指定模型
 chain = TranslateChain(model_id="deepseek")
 
-request = TranslateRequest(
-    content="Hello, world!",
-    source_language="auto",
-    target_language=""
-)
+request = TranslateRequest(content="Hello, world!")
 response = chain.translate(request)
 ```
 
@@ -281,21 +270,19 @@ response = chain.translate(request)
 | 字段 | 类型 | 必填 | 默认值 | 描述 |
 |------|------|------|--------|------|
 | content | string | 是 | - | 待翻译文本 |
-| source_language | string | 否 | auto | 源语言 |
-| target_language | string | 否 | "" | 目标语言，空表示自动判断 |
 
 **TranslateResponse：**
 
 | 字段 | 类型 | 描述 |
 |------|------|------|
-| translated_text | string | 翻译结果 |
+| translated_text | string | 翻译结果（中文原文或翻译后的中文） |
 | source_text | string | 原文 |
 | source_language | string | 源语言：cn/en |
 | target_language | string | 目标语言：cn/en |
 | model | string | 使用的模型 |
 
 **语言方向规则：**
-- 中文(cn) -> 英文(en)
+- 中文(cn) -> 直接返回原文
 - 英文或其他(en) -> 中文(cn)
 
 ---

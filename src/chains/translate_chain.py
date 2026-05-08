@@ -64,13 +64,13 @@ class TranslateChain:
     def _init_prompt_template(self):
         """初始化Prompt模板"""
         self.prompt_template = ChatPromptTemplate.from_template("""
-你是一个专业的翻译助手。请将以下文本翻译为目标语言。
+你是一个专业的翻译助手。请将以下非中文文本翻译为中文。
 
 要求：
 1. 保持原文的意思和语气
-2. 使用自然流畅的目标语言表达
+2. 使用自然流畅的中文表达
 3. 保留专有名词（如人名、地名、品牌名等）的原文或提供通用译名
-4. 语言方向：原文为中文时，目标语言为英文；原文为非中文时，目标语言为中文
+4. 只需要翻译非中文内容，中文内容保持不变
 5. 只输出翻译结果，不要添加任何解释或额外内容
 
 原文：
@@ -116,17 +116,33 @@ class TranslateChain:
     def _translate_small_text(self, request: TranslateRequest) -> TranslateResponse:
         """
         翻译短文本（不分块）
-        
+
         Args:
             request: 翻译请求
-            
+
         Returns:
             TranslateResponse: 翻译响应
         """
+        # 判断是否为中文
+        is_chinese = self._is_chinese_text(request.content)
+        source_lang = "cn" if is_chinese else "en"
+        target_lang = "cn" if not is_chinese else "en"
+
+        # 中文内容直接返回原文，不翻译
+        if is_chinese:
+            logger.info("检测到中文内容，直接返回原文")
+            return TranslateResponse(
+                translated_text=request.content,
+                source_text=request.content,
+                source_language=source_lang,
+                target_language=target_lang,
+                model=self.llm.model
+            )
+
         # 生成缓存key（使用hash避免过长）
         content_hash = hashlib.md5(request.content.encode('utf-8')).hexdigest()
         cache_key = f"{content_hash}"
-        
+
         # 检查缓存
         cached = cache.get(cache_key, "translate")
         if cached:
@@ -171,23 +187,39 @@ class TranslateChain:
     def _translate_large_text(self, request: TranslateRequest) -> TranslateResponse:
         """
         翻译大文章（分块翻译，支持并发）
-        
+
         Args:
             request: 翻译请求
-            
+
         Returns:
             TranslateResponse: 翻译响应
         """
         import json
         import time
         from concurrent.futures import ThreadPoolExecutor, as_completed
-        
+
         start_time = time.time()
-        
+
+        # 判断是否为中文
+        is_chinese = self._is_chinese_text(request.content)
+        source_lang = "cn" if is_chinese else "en"
+        target_lang = "cn" if not is_chinese else "en"
+
+        # 中文内容直接返回原文，不翻译
+        if is_chinese:
+            logger.info("检测到中文内容，直接返回原文")
+            return TranslateResponse(
+                translated_text=request.content,
+                source_text=request.content,
+                source_language=source_lang,
+                target_language=target_lang,
+                model=self.llm.model
+            )
+
         # 生成缓存key
         content_hash = hashlib.md5(request.content.encode('utf-8')).hexdigest()
         cache_key = f"large_{content_hash}_{self.CHUNK_SIZE}"
-        
+
         # 检查整体缓存
         cached = cache.get(cache_key, "translate_large")
         if cached:
